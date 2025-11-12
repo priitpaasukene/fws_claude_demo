@@ -1,0 +1,289 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #333;
+}
+
+#game-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* Rules Screen Styles */
+#rules-screen {
+    max-width: 500px;
+}
+
+#rules-screen h1 {
+    color: #2c5530;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+#rules-screen p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+    color: #444;
+}
+
+#rules-screen ul {
+    text-align: left;
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+#rules-screen li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+/* Button Styles */
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Game Mode Selection Buttons */
+#game-mode-buttons {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+#vs-computer-button,
+#hot-seat-button {
+    font-size: 16px;
+    padding: 12px 24px;
+    min-width: 200px;
+    transition: all 0.3s;
+}
+
+#vs-computer-button {
+    background-color: #2c5530;
+}
+
+#vs-computer-button:hover {
+    background-color: #1e3b21;
+}
+
+#hot-seat-button {
+    background-color: #8b4513;
+}
+
+#hot-seat-button:hover {
+    background-color: #6b3410;
+}
+
+/* Game Screen Styles */
+#game-status {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #2c5530;
+    min-height: 30px;
+}
+
+/* Game Board Styles */
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 5px;
+    max-width: 300px;
+    margin: 0 auto 30px;
+    background-color: #2c5530;
+    padding: 5px;
+    border-radius: 8px;
+}
+
+.cell {
+    width: 90px;
+    height: 90px;
+    background-color: #f9f9f9;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.cell:hover {
+    background-color: #e9e9e9;
+    border-color: #bbb;
+    transform: scale(1.05);
+}
+
+.cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.cell.disabled:hover {
+    background-color: #f9f9f9;
+    border-color: #ddd;
+    transform: none;
+}
+
+/* Cell Content Styles */
+.cell.egg::before {
+    content: "🥚";
+    font-size: 40px;
+}
+
+.cell.chicken::before {
+    content: "🐔";
+    font-size: 40px;
+}
+
+.cell.crocodile::before {
+    content: "🐊";
+    font-size: 40px;
+}
+
+.cell.empty::before {
+    content: "";
+}
+
+/* Game Controls */
+#game-controls {
+    margin-top: 20px;
+}
+
+#reset-button {
+    background-color: #ff6b6b;
+    margin-top: 10px;
+}
+
+#reset-button:hover {
+    background-color: #ff5252;
+}
+
+/* Error Screen Styles */
+#error-screen {
+    color: #d32f2f;
+}
+
+#error-message {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #ffebee;
+    border: 1px solid #f8bbd9;
+    border-radius: 5px;
+}
+
+#reset-to-initial-button {
+    background-color: #f44336;
+}
+
+#reset-to-initial-button:hover {
+    background-color: #d32f2f;
+}
+
+/* Winning Animation */
+.winning-row {
+    background-color: #c8e6c9 !important;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Turn Indicator Styles */
+.player-turn {
+    color: #2c5530;
+}
+
+.computer-turn {
+    color: #8b4513;
+}
+
+.player1-turn {
+    color: #2c5530;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.player2-turn {
+    color: #8b4513;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.game-over {
+    color: #d32f2f;
+    font-size: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    #game-container {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    .cell {
+        width: 70px;
+        height: 70px;
+        font-size: 20px;
+    }
+
+    .cell.egg::before,
+    .cell.chicken::before,
+    .cell.crocodile::before {
+        font-size: 30px;
+    }
+
+    #rules-screen h1 {
+        font-size: 20px;
+    }
+
+    #game-mode-buttons {
+        gap: 10px;
+    }
+
+    #vs-computer-button,
+    #hot-seat-button {
+        font-size: 14px;
+        padding: 10px 20px;
+        min-width: 180px;
+    }
+}

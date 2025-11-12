@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Game</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Rules Screen -->
+        <div id="rules-screen">
+            <div id="rules-text">
+                <h1>Chicken vs Crocodiles Game</h1>
+                <p>This is chicken vs crocodiles game</p>
+                <p>During your turn you can:</p>
+                <ul>
+                    <li>Place egg into empty cell</li>
+                    <li>Evolve egg into a chicken</li>
+                </ul>
+                <h3>Game Modes:</h3>
+                <p><strong>Play vs Computer:</strong> You play as Team Chicken against the computer (Team Crocodile).</p>
+                <p><strong>Hot Seat Play:</strong> Two players take turns on the same device. Player 1 is Team Chicken, Player 2 is Team Crocodile.</p>
+
+                <div id="computer-difficulty-section">
+                    <h4>Computer Difficulty:</h4>
+                    <select id="difficulty-dropdown">
+                        <option value="random">Random - Makes random legal moves</option>
+                        <option value="easy">Easy - Takes winning moves when available</option>
+                        <option value="hard">Hard - Plans ahead to win in 2 moves</option>
+                    </select>
+                </div>
+            </div>
+            <div id="game-mode-buttons">
+                <button id="vs-computer-button">Play vs Computer</button>
+                <button id="hot-seat-button">Hot Seat Play</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" style="display: none;">
+            <div id="game-status">Player's Turn</div>
+            <div id="game-board">
+                <div class="cell" data-row="0" data-col="0"></div>
+                <div class="cell" data-row="0" data-col="1"></div>
+                <div class="cell" data-row="0" data-col="2"></div>
+                <div class="cell" data-row="1" data-col="0"></div>
+                <div class="cell" data-row="1" data-col="1"></div>
+                <div class="cell" data-row="1" data-col="2"></div>
+                <div class="cell" data-row="2" data-col="0"></div>
+                <div class="cell" data-row="2" data-col="1"></div>
+                <div class="cell" data-row="2" data-col="2"></div>
+            </div>
+            <div id="game-controls">
+                <button id="reset-button">Reset Game</button>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="error-screen" style="display: none;">
+            <div id="error-message">Game is in unknown state</div>
+            <button id="reset-to-initial-button">Reset to Initial State</button>
+        </div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>

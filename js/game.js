@@ -18,6 +18,37 @@ const PLAYERS = {
     COMPUTER: 'computer'
 };
 
+const DIFFICULTY_PROFILES = {
+    'random': {
+        winRate: 0,
+        blockRate: 0,
+        setupRate: 0,
+        strategicRate: 0,
+        description: 'Makes random legal moves'
+    },
+    'easy': {
+        winRate: 1.0,
+        blockRate: 0,
+        setupRate: 0,
+        strategicRate: 0,
+        description: 'Wins if possible, otherwise random'
+    },
+    'medium': {
+        winRate: 1.0,
+        blockRate: 1.0,
+        setupRate: 0,
+        strategicRate: 0,
+        description: 'Wins if possible, blocks your wins, otherwise random'
+    },
+    'hard': {
+        winRate: 1.0,
+        blockRate: 1.0,
+        setupRate: 1.0,
+        strategicRate: 1.0,
+        description: 'Wins if possible, blocks your wins, sets up 2-move wins, uses strategic positioning'
+    }
+};
+
 class ChickenCrocodileGame {
     constructor() {
         this.gameState = GAME_STATES.RULES;
@@ -27,6 +58,18 @@ class ChickenCrocodileGame {
         this.winner = null;
         this.computerThinking = false;
         this.computerDifficulty = 'random';
+
+        // Performance analytics
+        this.gameStats = {
+            gamesPlayed: 0,
+            playerWins: 0,
+            computerWins: 0,
+            draws: 0,
+            totalMoves: 0,
+            averageGameLength: 0
+        };
+        this.currentGameMoves = 0;
+        this.gameStartTime = null;
 
         this.initializeEventListeners();
         this.showRulesScreen();
@@ -95,6 +138,10 @@ class ChickenCrocodileGame {
             this.gameEnded = false;
             this.winner = null;
             this.computerThinking = false;
+
+            // Initialize game tracking
+            this.currentGameMoves = 0;
+            this.gameStartTime = Date.now();
 
             const difficultySelect = document.getElementById('difficulty-select');
             this.computerDifficulty = difficultySelect ? difficultySelect.value : 'random';
@@ -165,6 +212,7 @@ class ChickenCrocodileGame {
             }
 
             if (actionTaken) {
+                this.trackMove();
                 this.updateGameDisplay();
 
                 if (this.checkWinCondition(this.currentPlayer)) {
@@ -186,6 +234,22 @@ class ChickenCrocodileGame {
     }
 
 
+    getComputerMoveDelay() {
+        try {
+            // Variable timing based on difficulty - harder difficulties "think" longer
+            const delays = {
+                'random': 200 + Math.random() * 300,    // 200-500ms
+                'easy': 400 + Math.random() * 400,      // 400-800ms
+                'medium': 600 + Math.random() * 500,    // 600-1100ms
+                'hard': 800 + Math.random() * 700       // 800-1500ms
+            };
+            return delays[this.computerDifficulty] || 300;
+        } catch (error) {
+            this.handleError('Error getting computer move delay: ' + error.message);
+            return 300; // fallback delay
+        }
+    }
+
     switchToComputerTurn() {
         try {
             this.currentPlayer = PLAYERS.COMPUTER;
@@ -193,10 +257,10 @@ class ChickenCrocodileGame {
             this.updateStatusMessage();
             this.disableBoard();
 
-            // 50 millisecond delay before computer move as specified
+            // Variable delay based on difficulty level
             setTimeout(() => {
                 this.makeComputerMove();
-            }, 50);
+            }, this.getComputerMoveDelay());
         } catch (error) {
             this.handleError('Error switching to computer turn: ' + error.message);
         }
@@ -212,17 +276,7 @@ class ChickenCrocodileGame {
                 return;
             }
 
-            let chosenMove;
-            switch (this.computerDifficulty) {
-                case 'easy':
-                    chosenMove = this.getEasyMove(legalMoves);
-                    break;
-                case 'hard':
-                    chosenMove = this.getHardMove(legalMoves);
-                    break;
-                default: // 'random'
-                    chosenMove = this.getRandomMove(legalMoves);
-            }
+            const chosenMove = this.getConfigurableMove(legalMoves, this.computerDifficulty);
 
             const { row, col, action } = chosenMove;
 
@@ -232,6 +286,7 @@ class ChickenCrocodileGame {
                 this.board[row][col] = CELL_STATES.CROCODILE;
             }
 
+            this.trackMove();
             this.updateGameDisplay();
 
             if (this.checkWinCondition(PLAYERS.COMPUTER)) {
@@ -258,10 +313,116 @@ class ChickenCrocodileGame {
         return legalMoves[Math.floor(Math.random() * legalMoves.length)];
     }
 
-    getEasyMove(legalMoves) {
-        // Easy: If computer can win in next move, make it. Otherwise random.
-        const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
-        return winningMove || this.getRandomMove(legalMoves);
+    getConfigurableMove(legalMoves, difficulty) {
+        try {
+            const profile = DIFFICULTY_PROFILES[difficulty];
+            if (!profile) {
+                return this.getRandomMove(legalMoves);
+            }
+
+            // Priority order based on profile settings
+            // 1. Win immediately if possible (controlled by winRate)
+            if (profile.winRate > 0) {
+                const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
+                if (winningMove) {
+                    return winningMove;
+                }
+            }
+
+            // 2. Block human from winning (controlled by blockRate)
+            if (profile.blockRate > 0) {
+                const blockingMove = this.findWinningMove(legalMoves, PLAYERS.HUMAN);
+                if (blockingMove) {
+                    return blockingMove;
+                }
+            }
+
+            // 3. Set up 2-move win (controlled by setupRate)
+            if (profile.setupRate > 0) {
+                const twoMoveWin = this.findTwoMoveWin(legalMoves);
+                if (twoMoveWin) {
+                    return twoMoveWin;
+                }
+            }
+
+            // 4. Strategic positioning (controlled by strategicRate)
+            if (profile.strategicRate > 0) {
+                const centerMove = this.findCenterMove(legalMoves);
+                if (centerMove) {
+                    return centerMove;
+                }
+
+                const cornerMove = this.findCornerMove(legalMoves);
+                if (cornerMove) {
+                    return cornerMove;
+                }
+            }
+
+            // 5. Default to random move
+            return this.getRandomMove(legalMoves);
+        } catch (error) {
+            this.handleError('Error getting configurable move: ' + error.message);
+            return this.getRandomMove(legalMoves); // fallback
+        }
+    }
+
+    trackMove() {
+        try {
+            this.currentGameMoves++;
+        } catch (error) {
+            this.handleError('Error tracking move: ' + error.message);
+        }
+    }
+
+    updateGameStatistics(winner) {
+        try {
+            this.gameStats.gamesPlayed++;
+            this.gameStats.totalMoves += this.currentGameMoves;
+            this.gameStats.averageGameLength = this.gameStats.totalMoves / this.gameStats.gamesPlayed;
+
+            if (winner === PLAYERS.HUMAN) {
+                this.gameStats.playerWins++;
+            } else if (winner === PLAYERS.COMPUTER) {
+                this.gameStats.computerWins++;
+            } else {
+                this.gameStats.draws++;
+            }
+        } catch (error) {
+            this.handleError('Error updating game statistics: ' + error.message);
+        }
+    }
+
+    getGameAnalytics() {
+        try {
+            const winRate = this.gameStats.gamesPlayed > 0
+                ? (this.gameStats.playerWins / this.gameStats.gamesPlayed * 100).toFixed(1)
+                : 0;
+
+            const profile = DIFFICULTY_PROFILES[this.computerDifficulty];
+
+            return {
+                gamesPlayed: this.gameStats.gamesPlayed,
+                playerWinRate: winRate + '%',
+                computerWins: this.gameStats.computerWins,
+                draws: this.gameStats.draws,
+                averageGameLength: this.gameStats.averageGameLength.toFixed(1),
+                currentDifficulty: this.computerDifficulty,
+                difficultyDescription: profile ? profile.description : 'Unknown',
+                difficultyProfile: profile
+            };
+        } catch (error) {
+            this.handleError('Error getting game analytics: ' + error.message);
+            return {
+                gamesPlayed: 0,
+                playerWinRate: '0%',
+                computerWins: 0,
+                draws: 0,
+                averageGameLength: '0',
+                currentDifficulty: this.computerDifficulty || 'unknown',
+                difficultyDescription: 'Error loading analytics',
+                difficultyProfile: null
+            };
+        }
     }
 
     findWinningMove(moves, player) {
@@ -273,28 +434,6 @@ class ChickenCrocodileGame {
         return null;
     }
 
-    getHardMove(legalMoves) {
-        // Hard: 1. Win immediately if possible
-        const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
-        if (winningMove) {
-            return winningMove;
-        }
-
-        // 2. Block human from winning
-        const blockingMove = this.findWinningMove(legalMoves, PLAYERS.HUMAN);
-        if (blockingMove) {
-            return blockingMove;
-        }
-
-        // 3. Set up a 2-move win if possible
-        const twoMoveWin = this.findTwoMoveWin(legalMoves);
-        if (twoMoveWin) {
-            return twoMoveWin;
-        }
-
-        // 4. Otherwise make random move
-        return this.getRandomMove(legalMoves);
-    }
 
     findTwoMoveWin(moves) {
         for (const move of moves) {
@@ -303,6 +442,29 @@ class ChickenCrocodileGame {
             }
         }
         return null;
+    }
+
+    findCenterMove(moves) {
+        try {
+            // Prefer center position (1,1) for strategic advantage
+            return moves.find(move => move.row === 1 && move.col === 1);
+        } catch (error) {
+            this.handleError('Error finding center move: ' + error.message);
+            return null;
+        }
+    }
+
+    findCornerMove(moves) {
+        try {
+            // Prefer corner positions for strategic advantage
+            const cornerPositions = [[0,0], [0,2], [2,0], [2,2]];
+            return moves.find(move =>
+                cornerPositions.some(([row, col]) => move.row === row && move.col === col)
+            );
+        } catch (error) {
+            this.handleError('Error finding corner move: ' + error.message);
+            return null;
+        }
     }
 
     canSetupWinInTwoMoves(move) {
@@ -471,6 +633,9 @@ class ChickenCrocodileGame {
             this.winner = winner;
             this.gameState = GAME_STATES.ENDED;
 
+            // Update game statistics
+            this.updateGameStatistics(winner);
+
             let message;
             if (winner === PLAYERS.HUMAN) {
                 message = "🎉 You Win! 🎉";
@@ -482,6 +647,9 @@ class ChickenCrocodileGame {
 
             this.updateStatus(message);
             this.disableBoard();
+
+            // Log analytics to console for development
+            console.log('Game Analytics:', this.getGameAnalytics());
         } catch (error) {
             this.handleError('Error ending game: ' + error.message);
         }
@@ -512,7 +680,24 @@ class ChickenCrocodileGame {
                 return; // No message to display if game hasn't started
             }
 
-            const message = this.currentPlayer === PLAYERS.HUMAN ? "Player's Turn" : "Computer's Turn";
+            let message;
+            if (this.currentPlayer === PLAYERS.HUMAN) {
+                message = "Player's Turn";
+            } else if (this.currentPlayer === PLAYERS.COMPUTER) {
+                if (this.computerThinking) {
+                    // Show different thinking messages based on difficulty
+                    const thinkingMessages = {
+                        'random': "Computer thinking... 🎲",
+                        'easy': "Computer thinking... 🤔",
+                        'medium': "Computer strategizing... 🧠",
+                        'hard': "Computer calculating... ⚡"
+                    };
+                    message = thinkingMessages[this.computerDifficulty] || "Computer's Turn";
+                } else {
+                    message = "Computer's Turn";
+                }
+            }
+
             this.updateStatus(message);
         } catch (error) {
             this.handleError('Error updating status message: ' + error.message);

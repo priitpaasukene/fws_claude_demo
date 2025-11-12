@@ -13,34 +13,19 @@ const CELL_STATES = {
     CROCODILE: 'crocodile'
 };
 
-const GAME_MODES = {
-    VS_COMPUTER: 'vs_computer',
-    HOT_SEAT: 'hot_seat'
-};
-
 const PLAYERS = {
     HUMAN: 'human',
-    COMPUTER: 'computer',
-    PLAYER1: 'player1', // Team Chicken
-    PLAYER2: 'player2'  // Team Crocodile
-};
-
-const DIFFICULTIES = {
-    RANDOM: 'random',
-    EASY: 'easy',
-    HARD: 'hard'
+    COMPUTER: 'computer'
 };
 
 class ChickenCrocodileGame {
     constructor() {
         this.gameState = GAME_STATES.RULES;
-        this.gameMode = null;
         this.currentPlayer = null;
         this.board = this.createEmptyBoard();
         this.gameEnded = false;
         this.winner = null;
         this.computerThinking = false;
-        this.computerDifficulty = DIFFICULTIES.RANDOM;
 
         this.initializeEventListeners();
         this.showRulesScreen();
@@ -58,30 +43,14 @@ class ChickenCrocodileGame {
         }
     }
 
-    isVsComputerMode() {
-        return this.gameMode === GAME_MODES.VS_COMPUTER;
-    }
-
-    isHotSeatMode() {
-        return this.gameMode === GAME_MODES.HOT_SEAT;
-    }
-
     getPlayerCreature(player) {
-        if (this.isVsComputerMode()) {
-            return player === PLAYERS.HUMAN ? CELL_STATES.CHICKEN : CELL_STATES.CROCODILE;
-        } else {
-            return player === PLAYERS.PLAYER1 ? CELL_STATES.CHICKEN : CELL_STATES.CROCODILE;
-        }
+        return player === PLAYERS.HUMAN ? CELL_STATES.CHICKEN : CELL_STATES.CROCODILE;
     }
 
     initializeEventListeners() {
         try {
-            document.getElementById('vs-computer-button').addEventListener('click', () => {
-                this.startGame(GAME_MODES.VS_COMPUTER);
-            });
-
-            document.getElementById('hot-seat-button').addEventListener('click', () => {
-                this.startGame(GAME_MODES.HOT_SEAT);
+            document.getElementById('start-game-button').addEventListener('click', () => {
+                this.startGame();
             });
 
             document.getElementById('reset-button').addEventListener('click', () => {
@@ -116,29 +85,10 @@ class ChickenCrocodileGame {
         }
     }
 
-    startGame(gameMode) {
+    startGame() {
         try {
             this.gameState = GAME_STATES.PLAYING;
-            this.gameMode = gameMode;
-
-            if (gameMode === GAME_MODES.VS_COMPUTER) {
-                this.currentPlayer = PLAYERS.HUMAN;
-                // Get difficulty setting from dropdown
-                try {
-                    const difficultyDropdown = document.getElementById('difficulty-dropdown');
-                    if (difficultyDropdown) {
-                        this.computerDifficulty = difficultyDropdown.value;
-                    } else {
-                        console.warn('Difficulty dropdown not found, using default');
-                        this.computerDifficulty = DIFFICULTIES.RANDOM;
-                    }
-                } catch (error) {
-                    console.warn('Error getting difficulty setting:', error.message);
-                    this.computerDifficulty = DIFFICULTIES.RANDOM;
-                }
-            } else {
-                this.currentPlayer = PLAYERS.PLAYER1;
-            }
+            this.currentPlayer = PLAYERS.HUMAN;
 
             this.board = this.createEmptyBoard();
             this.gameEnded = false;
@@ -158,8 +108,8 @@ class ChickenCrocodileGame {
 
     resetGame() {
         try {
-            if ((this.gameState === GAME_STATES.PLAYING || this.gameState === GAME_STATES.ENDED) && this.gameMode) {
-                this.startGame(this.gameMode);
+            if (this.gameState === GAME_STATES.PLAYING || this.gameState === GAME_STATES.ENDED) {
+                this.startGame();
             }
         } catch (error) {
             this.handleError('Failed to reset game: ' + error.message);
@@ -169,7 +119,6 @@ class ChickenCrocodileGame {
     resetToInitial() {
         try {
             this.gameState = GAME_STATES.RULES;
-            this.gameMode = null;
             this.currentPlayer = null;
             this.board = this.createEmptyBoard();
             this.gameEnded = false;
@@ -189,8 +138,8 @@ class ChickenCrocodileGame {
                 return;
             }
 
-            // In vs computer mode, only allow human moves
-            if (this.isVsComputerMode() && this.currentPlayer !== PLAYERS.HUMAN) {
+            // Only allow human moves when it's the player's turn
+            if (this.currentPlayer !== PLAYERS.HUMAN) {
                 return;
             }
 
@@ -224,28 +173,14 @@ class ChickenCrocodileGame {
                     return;
                 }
 
-                // Handle turn switching based on game mode
-                if (this.isVsComputerMode()) {
-                    this.switchToComputerTurn();
-                } else {
-                    this.switchToNextPlayer();
-                }
+                // Switch to computer turn after player move
+                this.switchToComputerTurn();
             }
         } catch (error) {
             this.handleError('Error handling cell click: ' + error.message);
         }
     }
 
-    switchToNextPlayer() {
-        try {
-            if (this.isHotSeatMode()) {
-                this.currentPlayer = this.currentPlayer === PLAYERS.PLAYER1 ? PLAYERS.PLAYER2 : PLAYERS.PLAYER1;
-                this.updateStatusMessage();
-            }
-        } catch (error) {
-            this.handleError('Error switching to next player: ' + error.message);
-        }
-    }
 
     switchToComputerTurn() {
         try {
@@ -254,79 +189,15 @@ class ChickenCrocodileGame {
             this.updateStatusMessage();
             this.disableBoard();
 
-            // 100 milliseconds delay before computer move
+            // 1 second delay before computer move as specified
             setTimeout(() => {
                 this.makeComputerMove();
-            }, 100);
+            }, 1000);
         } catch (error) {
             this.handleError('Error switching to computer turn: ' + error.message);
         }
     }
 
-    findWinningMove(player) {
-        try {
-            const legalMoves = this.getLegalMoves();
-
-            for (const move of legalMoves) {
-                // Simulate the move
-                const originalState = this.board[move.row][move.col];
-
-                if (move.action === 'place_egg') {
-                    this.board[move.row][move.col] = CELL_STATES.EGG;
-                } else if (move.action === 'evolve_egg') {
-                    this.board[move.row][move.col] = this.getPlayerCreature(player);
-                }
-
-                // Check if this move results in a win
-                const isWinningMove = this.checkWinCondition(player);
-
-                // Restore original state
-                this.board[move.row][move.col] = originalState;
-
-                if (isWinningMove) {
-                    return move;
-                }
-            }
-
-            return null;
-        } catch (error) {
-            this.handleError('Error finding winning move: ' + error.message);
-            return null;
-        }
-    }
-
-    findTwoMoveWins(player) {
-        try {
-            const legalMoves = this.getLegalMoves();
-            const winningFirstMoves = [];
-
-            for (const firstMove of legalMoves) {
-                // Simulate the first move
-                const originalState = this.board[firstMove.row][firstMove.col];
-
-                if (firstMove.action === 'place_egg') {
-                    this.board[firstMove.row][firstMove.col] = CELL_STATES.EGG;
-                } else if (firstMove.action === 'evolve_egg') {
-                    this.board[firstMove.row][firstMove.col] = this.getPlayerCreature(player);
-                }
-
-                // Check if this first move creates a winning opportunity in the next move
-                const winningMove = this.findWinningMove(player);
-
-                // Restore original state
-                this.board[firstMove.row][firstMove.col] = originalState;
-
-                if (winningMove) {
-                    winningFirstMoves.push(firstMove);
-                }
-            }
-
-            return winningFirstMoves;
-        } catch (error) {
-            this.handleError('Error finding two-move wins: ' + error.message);
-            return [];
-        }
-    }
 
     makeComputerMove() {
         try {
@@ -337,28 +208,8 @@ class ChickenCrocodileGame {
                 return;
             }
 
-            let chosenMove;
-
-            // Choose move based on difficulty
-            if (this.computerDifficulty === DIFFICULTIES.HARD) {
-                // Hard: Try to find 2-move win, fallback to easy logic
-                const twoMoveWins = this.findTwoMoveWins(PLAYERS.COMPUTER);
-                if (twoMoveWins.length > 0) {
-                    chosenMove = twoMoveWins[Math.floor(Math.random() * twoMoveWins.length)];
-                } else {
-                    // Fallback to easy logic
-                    const winningMove = this.findWinningMove(PLAYERS.COMPUTER);
-                    chosenMove = winningMove || legalMoves[Math.floor(Math.random() * legalMoves.length)];
-                }
-            } else if (this.computerDifficulty === DIFFICULTIES.EASY) {
-                // Easy: Take winning move if available, otherwise random
-                const winningMove = this.findWinningMove(PLAYERS.COMPUTER);
-                chosenMove = winningMove || legalMoves[Math.floor(Math.random() * legalMoves.length)];
-            } else {
-                // Random: Make random legal move
-                chosenMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-            }
-
+            // Computer always makes random legal move as specified
+            const chosenMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
             const { row, col, action } = chosenMove;
 
             if (action === 'place_egg') {
@@ -428,9 +279,9 @@ class ChickenCrocodileGame {
     checkWinCondition(player) {
         try {
             let targetCreature;
-            if (player === PLAYERS.HUMAN || player === PLAYERS.PLAYER1) {
+            if (player === PLAYERS.HUMAN) {
                 targetCreature = CELL_STATES.CHICKEN;
-            } else if (player === PLAYERS.COMPUTER || player === PLAYERS.PLAYER2) {
+            } else if (player === PLAYERS.COMPUTER) {
                 targetCreature = CELL_STATES.CROCODILE;
             } else {
                 return false;
@@ -513,22 +364,12 @@ class ChickenCrocodileGame {
             this.gameState = GAME_STATES.ENDED;
 
             let message;
-            if (this.isVsComputerMode()) {
-                if (winner === PLAYERS.HUMAN) {
-                    message = "🎉 You Win! 🎉";
-                } else if (winner === PLAYERS.COMPUTER) {
-                    message = "💻 Computer Wins! 💻";
-                } else {
-                    message = "🤝 It's a Draw! 🤝";
-                }
+            if (winner === PLAYERS.HUMAN) {
+                message = "🎉 You Win! 🎉";
+            } else if (winner === PLAYERS.COMPUTER) {
+                message = "💻 Computer Wins! 💻";
             } else {
-                if (winner === PLAYERS.PLAYER1) {
-                    message = "🐔 Team Chicken Wins! 🐔";
-                } else if (winner === PLAYERS.PLAYER2) {
-                    message = "🐊 Team Crocodile Wins! 🐊";
-                } else {
-                    message = "🤝 It's a Draw! 🤝";
-                }
+                message = "🤝 It's a Draw! 🤝";
             }
 
             this.updateStatus(message);
@@ -559,17 +400,11 @@ class ChickenCrocodileGame {
 
     updateStatusMessage() {
         try {
-            if (!this.gameMode || !this.currentPlayer) {
+            if (!this.currentPlayer) {
                 return; // No message to display if game hasn't started
             }
 
-            let message;
-            if (this.isVsComputerMode()) {
-                message = this.currentPlayer === PLAYERS.HUMAN ? "Player's Turn" : "Computer's Turn";
-            } else {
-                message = this.currentPlayer === PLAYERS.PLAYER1 ?
-                    "Team Chicken's Turn 🐔" : "Team Crocodile's Turn 🐊";
-            }
+            const message = this.currentPlayer === PLAYERS.HUMAN ? "Player's Turn" : "Computer's Turn";
             this.updateStatus(message);
         } catch (error) {
             this.handleError('Error updating status message: ' + error.message);
@@ -583,22 +418,14 @@ class ChickenCrocodileGame {
                 statusElement.textContent = message;
 
                 // Add appropriate CSS classes
-                statusElement.classList.remove('player-turn', 'computer-turn', 'game-over', 'player1-turn', 'player2-turn');
+                statusElement.classList.remove('player-turn', 'computer-turn', 'game-over');
 
                 if (this.gameEnded) {
                     statusElement.classList.add('game-over');
-                } else if (this.isVsComputerMode()) {
-                    if (this.currentPlayer === PLAYERS.HUMAN) {
-                        statusElement.classList.add('player-turn');
-                    } else {
-                        statusElement.classList.add('computer-turn');
-                    }
+                } else if (this.currentPlayer === PLAYERS.HUMAN) {
+                    statusElement.classList.add('player-turn');
                 } else {
-                    if (this.currentPlayer === PLAYERS.PLAYER1) {
-                        statusElement.classList.add('player1-turn');
-                    } else {
-                        statusElement.classList.add('player2-turn');
-                    }
+                    statusElement.classList.add('computer-turn');
                 }
             }
         } catch (error) {

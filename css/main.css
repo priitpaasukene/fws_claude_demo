@@ -63,6 +63,42 @@ button:disabled {
     cursor: not-allowed;
 }
 
+/* Difficulty Selection */
+#difficulty-selection {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+#difficulty-selection label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #2c5530;
+}
+
+#difficulty-select {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+#difficulty-select:focus {
+    outline: none;
+    border-color: #2c5530;
+}
+
+#difficulty-select:hover {
+    border-color: #45a049;
+}
+
 /* Start Game Button */
 #start-game-button {
     margin-top: 20px;

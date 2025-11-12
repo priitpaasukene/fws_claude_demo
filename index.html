@@ -15,8 +15,21 @@
 during your turn you can:
 * place egg into empty cell
 * evolve egg into a chicken
+
 Computer takes his turn after your turn.
-* computer takes random legal action during his turn</pre>
+Computer difficulty levels:
+* Random - makes random legal moves
+* Easy - wins if possible, otherwise random
+* Hard - wins if possible, blocks your wins,
+  sets up 2-move wins, otherwise random</pre>
+            </div>
+            <div id="difficulty-selection">
+                <label for="difficulty-select">Computer Difficulty:</label>
+                <select id="difficulty-select">
+                    <option value="random">Random</option>
+                    <option value="easy">Easy</option>
+                    <option value="hard">Hard</option>
+                </select>
             </div>
             <button id="start-game-button">start game</button>
         </div>

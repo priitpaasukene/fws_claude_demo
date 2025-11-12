@@ -26,6 +26,7 @@ class ChickenCrocodileGame {
         this.gameEnded = false;
         this.winner = null;
         this.computerThinking = false;
+        this.computerDifficulty = 'random';
 
         this.initializeEventListeners();
         this.showRulesScreen();
@@ -94,6 +95,9 @@ class ChickenCrocodileGame {
             this.gameEnded = false;
             this.winner = null;
             this.computerThinking = false;
+
+            const difficultySelect = document.getElementById('difficulty-select');
+            this.computerDifficulty = difficultySelect ? difficultySelect.value : 'random';
 
             document.getElementById('rules-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
@@ -208,8 +212,18 @@ class ChickenCrocodileGame {
                 return;
             }
 
-            // Computer always makes random legal move as specified
-            const chosenMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+            let chosenMove;
+            switch (this.computerDifficulty) {
+                case 'easy':
+                    chosenMove = this.getEasyMove(legalMoves);
+                    break;
+                case 'hard':
+                    chosenMove = this.getHardMove(legalMoves);
+                    break;
+                default: // 'random'
+                    chosenMove = this.getRandomMove(legalMoves);
+            }
+
             const { row, col, action } = chosenMove;
 
             if (action === 'place_egg') {
@@ -238,6 +252,100 @@ class ChickenCrocodileGame {
         } catch (error) {
             this.handleError('Error making computer move: ' + error.message);
         }
+    }
+
+    getRandomMove(legalMoves) {
+        return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+    }
+
+    getEasyMove(legalMoves) {
+        // Easy: If computer can win in next move, make it. Otherwise random.
+        const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
+        return winningMove || this.getRandomMove(legalMoves);
+    }
+
+    findWinningMove(moves, player) {
+        for (const move of moves) {
+            if (this.simulateMove(move, player)) {
+                return move;
+            }
+        }
+        return null;
+    }
+
+    getHardMove(legalMoves) {
+        // Hard: 1. Win immediately if possible
+        const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
+        if (winningMove) {
+            return winningMove;
+        }
+
+        // 2. Block human from winning
+        const blockingMove = this.findWinningMove(legalMoves, PLAYERS.HUMAN);
+        if (blockingMove) {
+            return blockingMove;
+        }
+
+        // 3. Set up a 2-move win if possible
+        const twoMoveWin = this.findTwoMoveWin(legalMoves);
+        if (twoMoveWin) {
+            return twoMoveWin;
+        }
+
+        // 4. Otherwise make random move
+        return this.getRandomMove(legalMoves);
+    }
+
+    findTwoMoveWin(moves) {
+        for (const move of moves) {
+            if (this.canSetupWinInTwoMoves(move)) {
+                return move;
+            }
+        }
+        return null;
+    }
+
+    canSetupWinInTwoMoves(move) {
+        // Simulate the move
+        const originalState = this.board[move.row][move.col];
+
+        // Apply the move
+        if (move.action === 'place_egg') {
+            this.board[move.row][move.col] = CELL_STATES.EGG;
+        } else if (move.action === 'evolve_egg') {
+            this.board[move.row][move.col] = this.getPlayerCreature(PLAYERS.COMPUTER);
+        }
+
+        // Get legal moves after this move
+        const futureMoves = this.getLegalMoves();
+
+        // Check if any future move leads to a win
+        const canWinNext = this.findWinningMove(futureMoves, PLAYERS.COMPUTER) !== null;
+
+        // Restore original state
+        this.board[move.row][move.col] = originalState;
+
+        return canWinNext;
+    }
+
+    simulateMove(move, player) {
+        // Create a copy of the board to simulate the move
+        const originalState = this.board[move.row][move.col];
+
+        // Apply the move
+        if (move.action === 'place_egg') {
+            this.board[move.row][move.col] = CELL_STATES.EGG;
+        } else if (move.action === 'evolve_egg') {
+            this.board[move.row][move.col] = this.getPlayerCreature(player);
+        }
+
+        // Check if this move results in a win
+        const isWinning = this.checkWinCondition(player);
+
+        // Restore original state
+        this.board[move.row][move.col] = originalState;
+
+        return isWinning;
     }
 
     getLegalMoves() {

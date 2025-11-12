@@ -189,10 +189,10 @@ class ChickenCrocodileGame {
             this.updateStatusMessage();
             this.disableBoard();
 
-            // 1 second delay before computer move as specified
+            // 50 millisecond delay before computer move as specified
             setTimeout(() => {
                 this.makeComputerMove();
-            }, 1000);
+            }, 50);
         } catch (error) {
             this.handleError('Error switching to computer turn: ' + error.message);
         }

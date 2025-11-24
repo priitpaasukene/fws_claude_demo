@@ -71,6 +71,9 @@ class ChickenCrocodileGame {
         this.currentGameMoves = 0;
         this.gameStartTime = null;
 
+        // Debug tracking for AI decisions
+        this.lastDecisionTree = null;
+
         this.initializeEventListeners();
         this.showRulesScreen();
     }
@@ -103,6 +106,11 @@ class ChickenCrocodileGame {
 
             document.getElementById('reset-to-initial-button').addEventListener('click', () => {
                 this.resetToInitial();
+            });
+
+            // Debug window toggle
+            document.getElementById('debug-toggle').addEventListener('click', () => {
+                this.toggleDebugWindow();
             });
 
             // Add click listeners to all cells
@@ -304,6 +312,9 @@ class ChickenCrocodileGame {
             this.computerThinking = false;
             this.updateStatusMessage();
             this.enableBoard();
+
+            // Update debug window with decision tree
+            this.updateDebugWindow();
         } catch (error) {
             this.handleError('Error making computer move: ' + error.message);
         }
@@ -317,52 +328,168 @@ class ChickenCrocodileGame {
         try {
             const profile = DIFFICULTY_PROFILES[difficulty];
             if (!profile) {
-                return this.getRandomMove(legalMoves);
+                this.lastDecisionTree = {
+                    difficulty: difficulty,
+                    profile: null,
+                    legalMoves: [...legalMoves],
+                    decisionSteps: [{
+                        step: 'error',
+                        description: 'Unknown difficulty profile',
+                        result: 'fallback to random'
+                    }],
+                    chosenMove: null,
+                    reasoning: 'Unknown difficulty profile, using random move'
+                };
+                const randomMove = this.getRandomMove(legalMoves);
+                this.lastDecisionTree.chosenMove = randomMove;
+                return randomMove;
             }
+
+            // Initialize decision tree tracking
+            this.lastDecisionTree = {
+                difficulty: difficulty,
+                profile: profile,
+                legalMoves: [...legalMoves],
+                decisionSteps: [],
+                chosenMove: null,
+                reasoning: ''
+            };
 
             // Priority order based on profile settings
             // 1. Win immediately if possible (controlled by winRate)
             if (profile.winRate > 0) {
                 const winningMove = this.findWinningMove(legalMoves, PLAYERS.COMPUTER);
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'win_check',
+                    description: 'Check for immediate winning moves',
+                    enabled: true,
+                    movesFound: winningMove ? [winningMove] : [],
+                    result: winningMove ? 'winning move found' : 'no winning moves'
+                });
                 if (winningMove) {
+                    this.lastDecisionTree.chosenMove = winningMove;
+                    this.lastDecisionTree.reasoning = 'Immediate win available';
                     return winningMove;
                 }
+            } else {
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'win_check',
+                    description: 'Check for immediate winning moves',
+                    enabled: false,
+                    result: 'disabled by difficulty profile'
+                });
             }
 
             // 2. Block human from winning (controlled by blockRate)
             if (profile.blockRate > 0) {
                 const blockingMove = this.findWinningMove(legalMoves, PLAYERS.HUMAN);
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'block_check',
+                    description: 'Check for moves that block human wins',
+                    enabled: true,
+                    movesFound: blockingMove ? [blockingMove] : [],
+                    result: blockingMove ? 'blocking move found' : 'no blocking needed'
+                });
                 if (blockingMove) {
+                    this.lastDecisionTree.chosenMove = blockingMove;
+                    this.lastDecisionTree.reasoning = 'Block human from winning';
                     return blockingMove;
                 }
+            } else {
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'block_check',
+                    description: 'Check for moves that block human wins',
+                    enabled: false,
+                    result: 'disabled by difficulty profile'
+                });
             }
 
             // 3. Set up 2-move win (controlled by setupRate)
             if (profile.setupRate > 0) {
                 const twoMoveWin = this.findTwoMoveWin(legalMoves);
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'setup_check',
+                    description: 'Check for moves that setup 2-move wins',
+                    enabled: true,
+                    movesFound: twoMoveWin ? [twoMoveWin] : [],
+                    result: twoMoveWin ? 'setup move found' : 'no setup moves'
+                });
                 if (twoMoveWin) {
+                    this.lastDecisionTree.chosenMove = twoMoveWin;
+                    this.lastDecisionTree.reasoning = 'Setup 2-move win opportunity';
                     return twoMoveWin;
                 }
+            } else {
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'setup_check',
+                    description: 'Check for moves that setup 2-move wins',
+                    enabled: false,
+                    result: 'disabled by difficulty profile'
+                });
             }
 
             // 4. Strategic positioning (controlled by strategicRate)
             if (profile.strategicRate > 0) {
                 const centerMove = this.findCenterMove(legalMoves);
+                const cornerMove = this.findCornerMove(legalMoves);
+
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'strategic_check',
+                    description: 'Check for strategic positioning (center/corners)',
+                    enabled: true,
+                    centerAvailable: centerMove ? true : false,
+                    cornersAvailable: cornerMove ? [cornerMove] : [],
+                    result: centerMove ? 'center move chosen' : (cornerMove ? 'corner move chosen' : 'no strategic positions')
+                });
+
                 if (centerMove) {
+                    this.lastDecisionTree.chosenMove = centerMove;
+                    this.lastDecisionTree.reasoning = 'Strategic center position';
                     return centerMove;
                 }
 
-                const cornerMove = this.findCornerMove(legalMoves);
                 if (cornerMove) {
+                    this.lastDecisionTree.chosenMove = cornerMove;
+                    this.lastDecisionTree.reasoning = 'Strategic corner position';
                     return cornerMove;
                 }
+            } else {
+                this.lastDecisionTree.decisionSteps.push({
+                    step: 'strategic_check',
+                    description: 'Check for strategic positioning (center/corners)',
+                    enabled: false,
+                    result: 'disabled by difficulty profile'
+                });
             }
 
             // 5. Default to random move
-            return this.getRandomMove(legalMoves);
+            this.lastDecisionTree.decisionSteps.push({
+                step: 'random_fallback',
+                description: 'No strategic moves found, select random move',
+                enabled: true,
+                result: 'random move selected'
+            });
+
+            const randomMove = this.getRandomMove(legalMoves);
+            this.lastDecisionTree.chosenMove = randomMove;
+            this.lastDecisionTree.reasoning = 'No better moves found, random selection';
+            return randomMove;
         } catch (error) {
             this.handleError('Error getting configurable move: ' + error.message);
-            return this.getRandomMove(legalMoves); // fallback
+            const fallbackMove = this.getRandomMove(legalMoves);
+            this.lastDecisionTree = {
+                difficulty: difficulty,
+                profile: null,
+                legalMoves: [...legalMoves],
+                decisionSteps: [{
+                    step: 'error',
+                    description: 'Error in decision making: ' + error.message,
+                    result: 'fallback to random'
+                }],
+                chosenMove: fallbackMove,
+                reasoning: 'Error occurred, using fallback random move'
+            };
+            return fallbackMove;
         }
     }
 
@@ -760,6 +887,97 @@ class ChickenCrocodileGame {
         const errorElement = document.getElementById('error-message');
         if (errorElement) {
             errorElement.textContent = `Game Error: ${errorMessage}`;
+        }
+    }
+
+    toggleDebugWindow() {
+        try {
+            const debugWindow = document.getElementById('debug-window');
+            const toggleButton = document.getElementById('debug-toggle');
+
+            if (debugWindow.style.display === 'none') {
+                debugWindow.style.display = 'block';
+                toggleButton.textContent = 'Hide';
+            } else {
+                debugWindow.style.display = 'none';
+                toggleButton.textContent = 'Show Debug';
+            }
+        } catch (error) {
+            this.handleError('Error toggling debug window: ' + error.message);
+        }
+    }
+
+    updateDebugWindow() {
+        try {
+            if (!this.lastDecisionTree) {
+                return;
+            }
+
+            // Show debug window if hidden
+            const debugWindow = document.getElementById('debug-window');
+            if (debugWindow.style.display === 'none') {
+                debugWindow.style.display = 'block';
+                document.getElementById('debug-toggle').textContent = 'Hide';
+            }
+
+            // Update summary
+            document.getElementById('debug-difficulty').textContent =
+                `Difficulty: ${this.lastDecisionTree.difficulty.toUpperCase()}`;
+
+            document.getElementById('debug-reasoning').textContent =
+                `Reasoning: ${this.lastDecisionTree.reasoning}`;
+
+            const chosenMove = this.lastDecisionTree.chosenMove;
+            document.getElementById('debug-chosen-move').textContent =
+                `Chosen Move: Row ${chosenMove.row}, Col ${chosenMove.col} (${chosenMove.action})`;
+
+            // Update decision steps
+            const stepsList = document.getElementById('debug-steps-list');
+            stepsList.innerHTML = '';
+
+            this.lastDecisionTree.decisionSteps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'debug-step';
+
+                if (step.enabled) {
+                    stepDiv.classList.add('enabled');
+                } else {
+                    stepDiv.classList.add('disabled');
+                }
+
+                // Check if this step resulted in the chosen move
+                if (step.movesFound && step.movesFound.some(move =>
+                    move.row === chosenMove.row && move.col === chosenMove.col)) {
+                    stepDiv.classList.add('chosen');
+                }
+
+                stepDiv.innerHTML = `
+                    <div class="debug-step-header">${step.description}</div>
+                    <div class="debug-step-result">${step.result}</div>
+                `;
+
+                stepsList.appendChild(stepDiv);
+            });
+
+            // Update legal moves
+            const movesList = document.getElementById('debug-moves-list');
+            movesList.innerHTML = '';
+
+            this.lastDecisionTree.legalMoves.forEach(move => {
+                const moveDiv = document.createElement('div');
+                moveDiv.className = 'debug-move';
+
+                if (move.row === chosenMove.row && move.col === chosenMove.col &&
+                    move.action === chosenMove.action) {
+                    moveDiv.classList.add('chosen');
+                }
+
+                moveDiv.textContent = `(${move.row},${move.col}) ${move.action}`;
+                movesList.appendChild(moveDiv);
+            });
+
+        } catch (error) {
+            this.handleError('Error updating debug window: ' + error.message);
         }
     }
 }

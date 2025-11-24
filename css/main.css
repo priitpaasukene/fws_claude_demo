@@ -260,6 +260,143 @@ button:disabled {
     font-size: 24px;
 }
 
+/* Debug Window Styles */
+#debug-window {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #2c2c2c;
+    color: #f0f0f0;
+    border-top: 3px solid #4CAF50;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #1f1f1f;
+    border-bottom: 1px solid #444;
+}
+
+#debug-header h3 {
+    margin: 0;
+    color: #4CAF50;
+    font-size: 16px;
+}
+
+#debug-toggle {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#debug-toggle:hover {
+    background: #ff5252;
+}
+
+#debug-content {
+    padding: 15px 20px;
+}
+
+#debug-summary {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #333;
+    border-radius: 5px;
+    border-left: 4px solid #4CAF50;
+}
+
+#debug-difficulty {
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 5px;
+}
+
+#debug-reasoning {
+    font-style: italic;
+    color: #ffc107;
+    margin-bottom: 5px;
+}
+
+#debug-chosen-move {
+    font-family: monospace;
+    color: #17a2b8;
+}
+
+#debug-steps h4,
+#debug-legal-moves h4 {
+    margin: 10px 0 8px 0;
+    color: #4CAF50;
+    font-size: 14px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 3px;
+}
+
+.debug-step {
+    margin: 8px 0;
+    padding: 8px;
+    background: #333;
+    border-radius: 3px;
+    border-left: 3px solid #666;
+}
+
+.debug-step.enabled {
+    border-left-color: #4CAF50;
+}
+
+.debug-step.disabled {
+    border-left-color: #999;
+    opacity: 0.7;
+}
+
+.debug-step.chosen {
+    border-left-color: #ffc107;
+    background: #3d3d00;
+}
+
+.debug-step-header {
+    font-weight: bold;
+    color: #f0f0f0;
+    margin-bottom: 3px;
+}
+
+.debug-step-result {
+    color: #aaa;
+    font-size: 12px;
+}
+
+#debug-moves-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.debug-move {
+    padding: 3px 6px;
+    background: #444;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+}
+
+.debug-move.chosen {
+    background: #ffc107;
+    color: #000;
+    font-weight: bold;
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     #game-container {
@@ -283,5 +420,17 @@ button:disabled {
         font-size: 14px;
         padding: 10px 20px;
         min-width: 180px;
+    }
+
+    #debug-window {
+        max-height: 250px;
+    }
+
+    #debug-content {
+        padding: 10px 15px;
+    }
+
+    #debug-header {
+        padding: 8px 15px;
     }
 }

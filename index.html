@@ -62,6 +62,29 @@ Computer difficulty levels:
         </div>
     </div>
 
+    <!-- Debug Window -->
+    <div id="debug-window" style="display: none;">
+        <div id="debug-header">
+            <h3>AI Decision Tree Debug</h3>
+            <button id="debug-toggle">Hide</button>
+        </div>
+        <div id="debug-content">
+            <div id="debug-summary">
+                <div id="debug-difficulty"></div>
+                <div id="debug-reasoning"></div>
+                <div id="debug-chosen-move"></div>
+            </div>
+            <div id="debug-steps">
+                <h4>Decision Steps:</h4>
+                <div id="debug-steps-list"></div>
+            </div>
+            <div id="debug-legal-moves">
+                <h4>Legal Moves Available:</h4>
+                <div id="debug-moves-list"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="js/game.js"></script>
 </body>
 </html>
